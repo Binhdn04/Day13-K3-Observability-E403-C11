@@ -4,7 +4,7 @@
 
 - Tên nhóm: C11
 - Repository URL: https://github.com/Binhdn04/Day13-K3-Observability-E403-C11
-- Commit SHA cuối: f139f50
+- Commit SHA cuối: ec04461305a799e0e180a565ac96c32b5aa3e0c5
 - Thành viên và vai trò:
   - **Đoàn Nhật Bình** (MSSV: 2A202602018) — Vai trò: API & Middleware. Phụ trách cài đặt Middleware, gán Correlation ID, bổ sung Exception Handler (phần mở rộng).
   - **Phan Bá Khánh Linh** (MSSV: 2A202601989) — Vai trò: QA & Chief Investigator (Bạn). Phụ trách chạy load test, bọc trace cho sub-component RAG/LLM (phần mở rộng), dẫn dắt điều tra Challenge (CP3) và hoàn thiện báo cáo.
@@ -65,8 +65,8 @@ Với mỗi thành viên, ghi rõ nhiệm vụ và link commit/PR tương ứng.
 
 | Thành viên | Phần việc | Commit/PR | Điều đã học |
 |---|---|---|---|
-| **Đoàn Nhật Bình**<br>(MSSV: 2A202602018) | **API & Middleware**: Viết `CorrelationIdMiddleware`, xử lý correlation ID cho request/response và ghi log contextvars; cài đặt Exception Handler mở rộng. | `f139f50` | Cách quản lý contextvars trong ứng dụng async FastAPI; cách bắt lỗi toàn cục và trả về thông tin lỗi chuẩn hóa không lộ PII kèm x-request-id. |
-| **Bùi Duy Hải**<br>(MSSV: 2A202601878) | **Security Engineer**: Cài đặt PII Scrubbing, tối ưu regex patterns cho Passport/Địa chỉ VN, tích hợp processor làm sạch log trước khi ghi file. | `f139f50` | Thiết kế regex hiệu quả cho các loại PII đặc thù của Việt Nam; cơ chế hoạt động của logging processor trong structlog. |
-| **Lê Trung Hiếu**<br>(MSSV: 2A202601917) | **Metrics & Dashboard**: Đo đếm `error_rate_pct` ở phần backend metrics và tham gia thiết kế spec cho Dashboard 6 nhóm chỉ số. | `f139f50` | Cách tính toán tỷ lệ lỗi trên tổng số request bao gồm cả lỗi hệ thống; cách thiết kế cấu trúc dashboard YAML. |
+| **Đoàn Nhật Bình**<br>(MSSV: 2A202602018) | **API & Middleware**: Viết `CorrelationIdMiddleware`, xử lý correlation ID cho request/response và ghi log contextvars; cài đặt Exception Handler mở rộng. | `fa06fc3` | Cách quản lý contextvars trong ứng dụng async FastAPI; cách bắt lỗi toàn cục và trả về thông tin lỗi chuẩn hóa không lộ PII kèm x-request-id. |
+| **Bùi Duy Hải**<br>(MSSV: 2A202601878) | **Security Engineer**: Cài đặt PII Scrubbing, tối ưu regex patterns cho Passport/Địa chỉ VN, tích hợp processor làm sạch log trước khi ghi file. | `3eef846` | Thiết kế regex hiệu quả cho các loại PII đặc thù của Việt Nam; cơ chế hoạt động của logging processor trong structlog. |
+| **Lê Trung Hiếu**<br>(MSSV: 2A202601917) | **Metrics & Dashboard**: Đo đếm `error_rate_pct` ở phần backend metrics và tham gia thiết kế spec cho Dashboard 6 nhóm chỉ số. | `a9d000c` | Cách tính toán tỷ lệ lỗi trên tổng số request bao gồm cả lỗi hệ thống; cách thiết kế cấu trúc dashboard YAML. |
 | **Nguyễn Minh Thu**<br>(MSSV: 01631) | **SRE & Alerts Engineer**: Thiết lập SLO (`config/slo.yaml`), viết alert rules (`config/alert_rules.yaml`) và runbook xử lý sự cố (`docs/alerts.md`) dựa trên baseline và incident practice. | `4ad611f` | Cách đặt ngưỡng SLO dựa trên dữ liệu thực tế đo đạc; symptom-based alert bám sát SLO thay vì tên implementation; thiết kế runbook cho SRE. |
-| **Phan Bá Khánh Linh**<br>(MSSV: 2A202601989) | **QA & Chief Investigator (Bạn)**: Thiết lập môi trường, bọc tracing cho RAG/LLM thành các span con, chạy tải load test challenge và phân tích root cause sự cố nghẽn luồng Event Loop. | [đóng góp hiện tại] | Hiểu rõ cơ chế nghẽn luồng (Event Loop blocking) của FastAPI khi gọi các hàm đồng bộ nặng; cách sử dụng decorator `@observe` để phân tích độ trễ của từng bước (RAG vs LLM) trên biểu đồ waterfall trace. |
+| **Phan Bá Khánh Linh**<br>(MSSV: 2A202601989) | **QA & Chief Investigator (Bạn)**: Thiết lập môi trường, bọc tracing cho RAG/LLM thành các span con, chạy tải load test challenge và phân tích root cause sự cố nghẽn luồng Event Loop. | `f139f50` | Hiểu rõ cơ chế nghẽn luồng (Event Loop blocking) của FastAPI khi gọi các hàm đồng bộ nặng; cách sử dụng decorator `@observe` để phân tích độ trễ của từng bước (RAG vs LLM) trên biểu đồ waterfall trace. |
