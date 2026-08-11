@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from math import ceil
 from statistics import mean
 
 REQUEST_LATENCIES: list[int] = []
@@ -13,6 +14,7 @@ QUALITY_SCORES: list[float] = []
 
 
 def record_request(latency_ms: int, cost_usd: float, tokens_in: int, tokens_out: int, quality_score: float) -> None:
+    """Record a successfully completed request and its response measurements."""
     global TRAFFIC
     TRAFFIC += 1
     REQUEST_LATENCIES.append(latency_ms)
@@ -24,6 +26,7 @@ def record_request(latency_ms: int, cost_usd: float, tokens_in: int, tokens_out:
 
 
 def record_error(error_type: str) -> None:
+    """Record one failed request by its exception type."""
     ERRORS[error_type] += 1
 
 
@@ -32,18 +35,21 @@ def percentile(values: list[int], p: int) -> float:
     if not values:
         return 0.0
     items = sorted(values)
-    idx = max(0, min(len(items) - 1, round((p / 100) * len(items) + 0.5) - 1))
+    idx = max(0, min(len(items) - 1, ceil((p / 100) * len(items)) - 1))
     return float(items[idx])
 
 
 
 def snapshot() -> dict:
+    successful_requests = TRAFFIC
     error_count = sum(ERRORS.values())
-    total_requests = TRAFFIC + error_count
+    total_requests = successful_requests + error_count
     error_rate_pct = round((error_count / total_requests) * 100, 2) if total_requests else 0.0
 
     return {
-        "traffic": TRAFFIC,
+        "traffic": total_requests,
+        "successful_requests": successful_requests,
+        "failed_requests": error_count,
         "latency_p50": percentile(REQUEST_LATENCIES, 50),
         "latency_p95": percentile(REQUEST_LATENCIES, 95),
         "latency_p99": percentile(REQUEST_LATENCIES, 99),
