@@ -7,9 +7,9 @@
 - Commit SHA cuối: ec04461305a799e0e180a565ac96c32b5aa3e0c5
 - Thành viên và vai trò:
   - **Đoàn Nhật Bình** (MSSV: 2A202602018) — Vai trò: API & Middleware. Phụ trách cài đặt Middleware, gán Correlation ID, bổ sung Exception Handler (phần mở rộng).
-  - **Phan Bá Khánh Linh** (MSSV: 2A202601989) — Vai trò: QA & Chief Investigator (Bạn). Phụ trách chạy load test, bọc trace cho sub-component RAG/LLM (phần mở rộng), dẫn dắt điều tra Challenge (CP3) và hoàn thiện báo cáo.
+  - **Phan Bá Khánh Linh** (MSSV: 2A202601989) — Vai trò: QA & Chief Investigator . Phụ trách chạy load test, bọc trace cho sub-component RAG/LLM (phần mở rộng), dẫn dắt điều tra Challenge (CP3) và hoàn thiện báo cáo.
   - **Nguyễn Minh Thu** (MSSV: 01631) — Vai trò: SRE & Alerts Engineer. Phụ trách thiết lập SLO, viết Alerts rules và Alert Runbook xử lý sự cố.
-  - **Bùi Duy Hải** (Hải píp) (MSSV: 2A202601878) — Vai trò: Security Engineer. Phụ trách cài đặt PII Scrubbing, regex patterns và kiểm chứng log không lộ PII.
+  - **Bùi Duy Hải** (MSSV: 2A202601878) — Vai trò: Security Engineer. Phụ trách cài đặt PII Scrubbing, regex patterns và kiểm chứng log không lộ PII.
   - **Lê Trung Hiếu** (MSSV: 2A202601917) — Vai trò: Metrics & Dashboard. Phụ trách đo đếm `error_rate_pct` và thiết kế spec Dashboard 6 nhóm chỉ số.
 
 ## 2. Kết quả kỹ thuật
