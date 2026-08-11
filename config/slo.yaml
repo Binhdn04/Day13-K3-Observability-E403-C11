@@ -4,13 +4,22 @@ slis:
   latency_p95_ms:
     objective: 3000
     target: 99.5
-    note: Replace with your group's target
+    note: >-
+      Baseline do bang python scripts/load_test.py: p95 binh thuong ~1165ms,
+      p99 ~1246ms. Khi bat incident rag_slow, p95 tang len ~3600ms (vuot
+      nguong). Objective 3000ms giu nguyen vi tao du khoang cach voi baseline
+      va bat dung su co rag_slow.
   error_rate_pct:
     objective: 2
     target: 99.0
   daily_cost_usd:
     objective: 2.5
     target: 100.0
+    note: >-
+      Baseline binh thuong ~0.0021 USD/request. Khi bat incident cost_spike,
+      chi phi tang len ~0.0078 USD/request (~3.7x). Objective 2.5 USD/ngay
+      giu nguyen, tuong duong ~1190 request/ngay o muc gia binh thuong.
   quality_score_avg:
     objective: 0.75
     target: 95.0
+    note: Quality proxy giu on dinh ~0.88 qua ca 3 kich ban su co (fake LLM).
