@@ -33,7 +33,7 @@ baseline: 30/100
 ## 5. Dashboard, SLO và alerts
 
 - Kết quả `validate_dashboard.py`: HỢP LỆ 6/6 panel.
-- Evidence dashboard: TODO — chụp ảnh dashboard runtime có SLO line/threshold, lưu vào `submission/evidence/`.
+- Evidence dashboard: `submission/evidence/member-c-dashboard-metrics.png` (trạng thái healthy, đủ threshold theo `config/slo.yaml`: latency ≤3000ms, traffic ≥1, error ≤2%, cost ≤2.5 USD, tokens ≤50000, quality ≥0.75) và `submission/evidence/member-c-dashboard-error.png` (panel error rate chuyển sang BREACHED ở 33.33% khi có `RuntimeError`, khớp kịch bản `tool_fail` đã test).
 - SLO đã chọn và lý do (`config/slo.yaml`):
   - `latency_p95_ms` objective 3000ms: baseline đo bằng `python scripts/load_test.py` cho p95 ~1075-1165ms, p99 ~1246ms; khi bật incident `rag_slow` p95 tăng lên ~3600ms, vượt ngưỡng. Giữ 3000ms để có khoảng đệm với baseline nhưng vẫn bắt đúng sự cố.
   - `error_rate_pct` objective 2%: khớp với threshold panel `errors` trong `config/dashboard.yaml` để không lệch số giữa các artifact.
