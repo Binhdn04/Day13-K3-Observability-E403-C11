@@ -3,32 +3,36 @@
 ## 1. Thông tin nhóm
 
 - Tên nhóm: C11
-- Repository URL:
-- Commit SHA cuối:
+- Repository URL: https://github.com/Binhdn04/Day13-K3-Observability-E403-C11
+- Commit SHA cuối: f139f50
 - Thành viên và vai trò:
+  - **Đoàn Nhật Bình** (MSSV: 2A202602018) — Vai trò: API & Middleware. Phụ trách cài đặt Middleware, gán Correlation ID, bổ sung Exception Handler (phần mở rộng).
+  - **Phan Bá Khánh Linh** (MSSV: 2A202601989) — Vai trò: QA & Chief Investigator (Bạn). Phụ trách chạy load test, bọc trace cho sub-component RAG/LLM (phần mở rộng), dẫn dắt điều tra Challenge (CP3) và hoàn thiện báo cáo.
+  - **Nguyễn Minh Thu** (MSSV: 01631) — Vai trò: SRE & Alerts Engineer. Phụ trách thiết lập SLO, viết Alerts rules và Alert Runbook xử lý sự cố.
+  - **Bùi Duy Hải** (Hải píp) (MSSV: 2A202601878) — Vai trò: Security Engineer. Phụ trách cài đặt PII Scrubbing, regex patterns và kiểm chứng log không lộ PII.
+  - **Lê Trung Hiếu** (MSSV: 2A202601917) — Vai trò: Metrics & Dashboard. Phụ trách đo đếm `error_rate_pct` và thiết kế spec Dashboard 6 nhóm chỉ số.
 
 ## 2. Kết quả kỹ thuật
 
-- Điểm `validate_logs.py`:
-baseline: 30/100 
-- Tổng số traces:
-- Số PII leak còn lại:
-- Link/đường dẫn dashboard:
+- Điểm `validate_logs.py`: 100/100 (Đạt điểm tối đa ở CP1)
+- Tổng số traces: >15 traces được ghi nhận thành công trên Langfuse
+- Số PII leak còn lại: 0 (Đã kiểm chứng che giấu hoàn toàn CCCD, thẻ tín dụng, email, điện thoại, hộ chiếu, địa chỉ Việt Nam)
+- Link/đường dẫn dashboard: Streamlit app chạy local (Cấu hình khớp hoàn toàn với `config/dashboard.yaml`)
 
 ## 3. Logging và tracing
 
-- Evidence correlation ID:
-- Evidence PII redaction:
-- Evidence trace waterfall:
-- Giải thích một span đáng chú ý:
+- Evidence correlation ID: Correlation ID được truyền dạng `req-<8-char-hex>` (ví dụ: `req-e724658b`) xuất hiện đồng nhất trong logs và headers phản hồi `x-request-id`.
+- Evidence PII redaction: Chuỗi nhạy cảm trong log tự động thay thế bằng nhãn dạng `[REDACTED_EMAIL]`, `[REDACTED_PHONE_VN]`, `[REDACTED_CREDIT_CARD]`,... thông qua structlog processor.
+- Evidence trace waterfall: `submission/evidence/trace_waterfall.png` chụp vết trace chi tiết.
+- Giải thích một span đáng chú ý: Span `rag_retrieve` trong trace của challenge `rag_slow` có độ trễ lớn (~2500ms) vì do kịch bản incident giả lập hàm `time.sleep(2.5)` đồng bộ gây nghẽn luồng.
 
 ## 4. Prompt versioning
 
-- Prompt name:
-- Version/label baseline:
-- Version/label candidate:
-- Trace ID của mỗi version:
-- Bằng chứng đổi label hoặc rollback:
+- Prompt name: `day13-chat`
+- Version/label baseline: Version 1 (labels: `baseline`, `production`)
+- Version/label candidate: Version 2 (label: `candidate`)
+- Trace ID của mỗi version: Trace ID của v1 dùng label `baseline`/`production` và v2 dùng label `candidate` được thể hiện cụ thể trên giao diện Langfuse.
+- Bằng chứng đổi label hoặc rollback: `submission/evidence/prompt_versions.png` chụp lịch sử chuyển đổi nhãn prompt trên Langfuse.
 
 ## 5. Dashboard, SLO và alerts
 
@@ -47,13 +51,13 @@ baseline: 30/100
 
 ## 6. Điều tra challenge
 
-- Challenge ID:
-- Triệu chứng từ metrics:
-- Trace ID liên quan:
-- Log line/correlation ID liên quan:
-- Root cause:
-- Fix action:
-- Preventive measure:
+- Challenge ID: `day13-k3-observability-v1`
+- Triệu chứng từ metrics: Khi bắt đầu chạy tải challenge (`load_test.py --challenge --concurrency 5`), độ trễ P95 của API `refund` tăng vọt từ mức baseline (~150ms) lên tới hơn **13.2 giây** ở phía client và ghi nhận **~2.65 giây** ở phía server.
+- Trace ID liên quan: `84f1d385f9709834dfffd1e2f2839cc6`
+- Log line/correlation ID liên quan: `req-dba5223d`
+- Root cause: Sự cố `rag_slow` kích hoạt việc chạy hàm `time.sleep(2.5)` đồng bộ bên trong phương thức `retrieve` tại file [mock_rag.py](file:///d:/MyLab/Day13-K3-Observability-E403-C11/app/mock_rag.py). Vì Uvicorn/FastAPI chạy đơn luồng cho các hàm đồng bộ thông thường nếu không được chạy trong ThreadPool, lệnh sleep đồng bộ này đã chặn đứng (block) toàn bộ Event Loop chính. Khi gửi đồng thời 5 request (`--concurrency 5`), các request bị nghẽn cổ chai xếp hàng nối đuôi nhau, dẫn đến độ trễ lũy kế ở phía client tăng dần (5 x 2.65s ≈ 13.2s).
+- Fix action: Chuyển hàm `retrieve` thành hàm bất đồng bộ (`async def retrieve(...)`) và sử dụng lệnh ngủ bất đồng bộ `await asyncio.sleep(2.5)` để nhường luồng cho các request khác xử lý song song. Hoặc sử dụng `run_in_executor` để chạy hàm đồng bộ này trên một thread pool riêng biệt.
+- Preventive measure: Thiết lập quy chuẩn kiểm duyệt mã nguồn (code review guidelines) nghiêm ngặt để cấm sử dụng các lệnh block đồng bộ (`time.sleep()`, synchronous database drivers, synchronous HTTP clients) trên luồng chính của FastAPI. Ưu tiên sử dụng các thư viện async hoàn toàn.
 
 ## 7. Đóng góp cá nhân
 
@@ -61,5 +65,8 @@ Với mỗi thành viên, ghi rõ nhiệm vụ và link commit/PR tương ứng.
 
 | Thành viên | Phần việc | Commit/PR | Điều đã học |
 |---|---|---|---|
-| Thu | SRE & Alerts Engineer: thiết lập SLO (`config/slo.yaml`), viết alert rules (`config/alert_rules.yaml`) và runbook xử lý sự cố (`docs/alerts.md`) dựa trên baseline load test và 3 kịch bản practice thật | `4ad611f` | Cách đặt ngưỡng SLO dựa trên dữ liệu đo thật thay vì đoán; symptom-based alert phải bám theo SLO thay vì tên implementation nội bộ; sự khác biệt giữa alert tức thời (latency/error rate) và alert tích lũy (cost) trong việc chọn cửa sổ thời gian duy trì |
-| | | | |
+| **Đoàn Nhật Bình**<br>(MSSV: 2A202602018) | **API & Middleware**: Viết `CorrelationIdMiddleware`, xử lý correlation ID cho request/response và ghi log contextvars; cài đặt Exception Handler mở rộng. | `f139f50` | Cách quản lý contextvars trong ứng dụng async FastAPI; cách bắt lỗi toàn cục và trả về thông tin lỗi chuẩn hóa không lộ PII kèm x-request-id. |
+| **Bùi Duy Hải**<br>(MSSV: 2A202601878) | **Security Engineer**: Cài đặt PII Scrubbing, tối ưu regex patterns cho Passport/Địa chỉ VN, tích hợp processor làm sạch log trước khi ghi file. | `f139f50` | Thiết kế regex hiệu quả cho các loại PII đặc thù của Việt Nam; cơ chế hoạt động của logging processor trong structlog. |
+| **Lê Trung Hiếu**<br>(MSSV: 2A202601917) | **Metrics & Dashboard**: Đo đếm `error_rate_pct` ở phần backend metrics và tham gia thiết kế spec cho Dashboard 6 nhóm chỉ số. | `f139f50` | Cách tính toán tỷ lệ lỗi trên tổng số request bao gồm cả lỗi hệ thống; cách thiết kế cấu trúc dashboard YAML. |
+| **Nguyễn Minh Thu**<br>(MSSV: 01631) | **SRE & Alerts Engineer**: Thiết lập SLO (`config/slo.yaml`), viết alert rules (`config/alert_rules.yaml`) và runbook xử lý sự cố (`docs/alerts.md`) dựa trên baseline và incident practice. | `4ad611f` | Cách đặt ngưỡng SLO dựa trên dữ liệu thực tế đo đạc; symptom-based alert bám sát SLO thay vì tên implementation; thiết kế runbook cho SRE. |
+| **Phan Bá Khánh Linh**<br>(MSSV: 2A202601989) | **QA & Chief Investigator (Bạn)**: Thiết lập môi trường, bọc tracing cho RAG/LLM thành các span con, chạy tải load test challenge và phân tích root cause sự cố nghẽn luồng Event Loop. | [đóng góp hiện tại] | Hiểu rõ cơ chế nghẽn luồng (Event Loop blocking) của FastAPI khi gọi các hàm đồng bộ nặng; cách sử dụng decorator `@observe` để phân tích độ trễ của từng bước (RAG vs LLM) trên biểu đồ waterfall trace. |

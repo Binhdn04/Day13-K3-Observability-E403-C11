@@ -28,11 +28,19 @@ class LabAgent:
         self.model = model
         self.llm = FakeLLM(model=model)
 
+    @observe(as_type="span", name="rag_retrieve")
+    def _traced_retrieve(self, message: str) -> list[str]:
+        return retrieve(message)
+
+    @observe(as_type="generation", name="llm_generate")
+    def _traced_generate(self, prompt_text: str):
+        return self.llm.generate(prompt_text)
+
     @observe(as_type="generation", capture_input=False, capture_output=False)
     def run(self, user_id: str, feature: str, session_id: str, message: str) -> AgentResult:
         started = time.perf_counter()
         correlation_id = get_contextvars().get("correlation_id", "unknown")
-        docs = retrieve(message)
+        docs = self._traced_retrieve(message)
         langfuse_client = get_langfuse_client()
         prompt = resolve_prompt(
             langfuse_client,
@@ -41,7 +49,7 @@ class LabAgent:
             message=message,
             enabled=tracing_enabled(),
         )
-        response = self.llm.generate(prompt.text)
+        response = self._traced_generate(prompt.text)
         quality_score = self._heuristic_quality(message, response.text, docs)
         latency_ms = int((time.perf_counter() - started) * 1000)
         cost_usd = self._estimate_cost(response.usage.input_tokens, response.usage.output_tokens)
