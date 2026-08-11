@@ -2,7 +2,7 @@
 
 ## 1. Thông tin nhóm
 
-- Tên nhóm:
+- Tên nhóm: C11
 - Repository URL:
 - Commit SHA cuối:
 - Thành viên và vai trò:
@@ -10,6 +10,7 @@
 ## 2. Kết quả kỹ thuật
 
 - Điểm `validate_logs.py`:
+baseline: 30/100 
 - Tổng số traces:
 - Số PII leak còn lại:
 - Link/đường dẫn dashboard:
