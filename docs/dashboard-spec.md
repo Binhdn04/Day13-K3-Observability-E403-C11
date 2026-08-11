@@ -34,31 +34,36 @@ Khi chưa có request, `error_rate_pct = 0`. `error_breakdown` đếm lỗi theo
 
 ## Cách chạy
 
+Chạy các lệnh sau từ thư mục gốc repository, sau khi đã kích hoạt virtual environment hoặc Conda environment và cài đặt `requirements.txt`.
+
 Terminal 1 — API:
 
 ```powershell
-$env1Python = "C:\Users\Admin\miniconda3\envs\env1\python.exe"
-& $env1Python -m uvicorn app.main:app --env-file .env --host 127.0.0.1 --port 8000
+python -m uvicorn app.main:app --env-file .env --host 127.0.0.1 --port 8000
 ```
 
 Terminal 2 — tạo 10 request:
 
 ```powershell
-$env1Python = "C:\Users\Admin\miniconda3\envs\env1\python.exe"
-& $env1Python scripts\load_test.py --concurrency 5
+python scripts\load_test.py --concurrency 5
 ```
 
 Terminal 3 — dashboard:
 
 ```powershell
-$env1Python = "C:\Users\Admin\miniconda3\envs\env1\python.exe"
-& $env1Python -m uvicorn app.dashboard:app --host 127.0.0.1 --port 8501
+python -m uvicorn app.dashboard:app --host 127.0.0.1 --port 8501
 ```
 
 Kiểm tra snapshot nguồn:
 
 ```powershell
 Invoke-RestMethod http://127.0.0.1:8000/metrics | ConvertTo-Json -Depth 5
+```
+
+Hoặc trên macOS/Linux:
+
+```bash
+curl -s http://127.0.0.1:8000/metrics | python -m json.tool
 ```
 
 ## Evidence CP2 của dashboard
