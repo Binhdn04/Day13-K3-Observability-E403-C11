@@ -7,6 +7,8 @@ from fastapi.responses import JSONResponse
 from structlog.contextvars import bind_contextvars
 
 from .agent import LabAgent
+from .audit import write_audit_event
+from .cost_optimization import max_output_tokens, response_cache_enabled
 from .incidents import disable, enable, status
 from .logging_config import configure_logging, get_logger
 from .metrics import record_error, snapshot
@@ -40,6 +42,13 @@ async def startup() -> None:
         env=os.getenv("APP_ENV", "dev"),
         payload={"tracing_enabled": tracing_enabled()},
     )
+    write_audit_event(
+        "config_changed",
+        details={
+            "max_output_tokens": max_output_tokens(),
+            "response_cache_enabled": response_cache_enabled(),
+        },
+    )
 
 
 @app.get("/health")
@@ -62,7 +71,7 @@ async def chat(request: Request, body: ChatRequest) -> ChatResponse:
         model="claude-sonnet-4-5",
         env=os.getenv("APP_ENV", "dev"),
     )
-    
+
     log.info(
         "request_received",
         service="api",
@@ -110,6 +119,7 @@ async def chat(request: Request, body: ChatRequest) -> ChatResponse:
 async def enable_incident(name: str) -> JSONResponse:
     try:
         enable(name)
+        write_audit_event("incident_enabled", actor="operator", details={"incident": name})
         log.warning("incident_enabled", service="control", payload={"name": name})
         return JSONResponse({"ok": True, "incidents": status()})
     except KeyError as exc:
@@ -120,6 +130,7 @@ async def enable_incident(name: str) -> JSONResponse:
 async def disable_incident(name: str) -> JSONResponse:
     try:
         disable(name)
+        write_audit_event("incident_disabled", actor="operator", details={"incident": name})
         log.warning("incident_disabled", service="control", payload={"name": name})
         return JSONResponse({"ok": True, "incidents": status()})
     except KeyError as exc:

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from structlog.contextvars import get_contextvars
 
 from . import metrics
+from .cost_optimization import CachedResponse, max_output_tokens, response_cache
 from .mock_llm import FakeLLM
 from .mock_rag import retrieve
 from .pii import hash_user_id, summarize_text
@@ -34,7 +35,33 @@ class LabAgent:
 
     @observe(as_type="generation", name="llm_generate")
     def _traced_generate(self, prompt_text: str):
-        return self.llm.generate(prompt_text)
+        output_cap = max_output_tokens()
+        cached = response_cache.get(prompt_text, self.model, output_cap)
+        if cached:
+            return self._response_from_cache(cached)
+        response = self.llm.generate(prompt_text, max_tokens=output_cap)
+        response_cache.put(
+            prompt_text,
+            output_cap,
+            CachedResponse(
+                text=response.text,
+                input_tokens=response.usage.input_tokens,
+                output_tokens=response.usage.output_tokens,
+                model=response.model,
+            ),
+        )
+        return response
+
+    @staticmethod
+    def _response_from_cache(cached: CachedResponse):
+        """Recreate the mock SDK response without charging tokens on a cache hit."""
+        from .mock_llm import FakeResponse, FakeUsage
+
+        return FakeResponse(
+            text=cached.text,
+            usage=FakeUsage(input_tokens=0, output_tokens=0),
+            model=cached.model,
+        )
 
     @observe(as_type="generation", capture_input=False, capture_output=False)
     def run(self, user_id: str, feature: str, session_id: str, message: str) -> AgentResult:

@@ -18,10 +18,10 @@ BASE_URL = "http://127.0.0.1:8000"
 QUERIES = Path("data/sample_queries.jsonl")
 
 
-def send_request(client: httpx.Client, payload: dict) -> None:
+def send_request(client: httpx.Client, payload: dict, base_url: str = BASE_URL) -> None:
     try:
         start = time.perf_counter()
-        r = client.post(f"{BASE_URL}/chat", json=payload)
+        r = client.post(f"{base_url.rstrip('/')}/chat", json=payload)
         latency = (time.perf_counter() - start) * 1000
         cid = r.headers.get("x-request-id") or r.json().get("correlation_id", "None")
         print(f"[{r.status_code}] {cid} | {payload['feature']} | {latency:.1f}ms")
@@ -33,6 +33,7 @@ def main() -> None:
     configure_utf8_stdio()
     parser = argparse.ArgumentParser()
     parser.add_argument("--concurrency", type=int, default=1, help="Number of concurrent requests")
+    parser.add_argument("--base-url", default=BASE_URL, help="API base URL (default: %(default)s)")
     parser.add_argument(
         "--challenge",
         action="store_true",
@@ -54,11 +55,11 @@ def main() -> None:
     with httpx.Client(timeout=30.0) as client:
         if args.concurrency > 1:
             with concurrent.futures.ThreadPoolExecutor(max_workers=args.concurrency) as executor:
-                futures = [executor.submit(send_request, client, payload) for payload in payloads]
+                futures = [executor.submit(send_request, client, payload, args.base_url) for payload in payloads]
                 concurrent.futures.wait(futures)
         else:
             for payload in payloads:
-                send_request(client, payload)
+                send_request(client, payload, args.base_url)
 
 
 if __name__ == "__main__":

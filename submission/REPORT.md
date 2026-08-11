@@ -59,6 +59,14 @@
 - Fix action: Chuyển hàm `retrieve` thành hàm bất đồng bộ (`async def retrieve(...)`) và sử dụng lệnh ngủ bất đồng bộ `await asyncio.sleep(2.5)` để nhường luồng cho các request khác xử lý song song. Hoặc sử dụng `run_in_executor` để chạy hàm đồng bộ này trên một thread pool riêng biệt.
 - Preventive measure: Thiết lập quy chuẩn kiểm duyệt mã nguồn (code review guidelines) nghiêm ngặt để cấm sử dụng các lệnh block đồng bộ (`time.sleep()`, synchronous database drivers, synchronous HTTP clients) trên luồng chính của FastAPI. Ưu tiên sử dụng các thư viện async hoàn toàn.
 
+## 6.1 Bonus — Cost optimization, audit log và automation
+
+- Đã bật `cost_spike` và chạy cùng load test 10 request. Trước mitigation (`MAX_OUTPUT_TOKENS=0`, cache tắt), `total_cost_usd = 0.0777`. Sau mitigation (`MAX_OUTPUT_TOKENS=120`, cache bật), `total_cost_usd = 0.0190`, giảm 75.5%.
+- Giải pháp triển khai: giới hạn output token trong `FakeLLM` và cache response theo prompt/model/cap. Cache hit không phát sinh token mới.
+- Audit log append-only được ghi riêng tại `data/audit.jsonl` theo `AUDIT_LOG_PATH`; chỉ ghi `config_changed`, `incident_enabled`, `incident_disabled`.
+- Automation `scripts/detect_anomalies.py` quét JSONL tìm PII leak và latency vượt SLO, ghi alert vào `data/anomaly_alerts.jsonl`.
+- Hướng dẫn tái lập và chụp screenshot nằm tại `docs/COST_OPTIMIZATION.md`.
+
 ## 7. Đóng góp cá nhân
 
 Với mỗi thành viên, ghi rõ nhiệm vụ và link commit/PR tương ứng.
@@ -69,4 +77,4 @@ Với mỗi thành viên, ghi rõ nhiệm vụ và link commit/PR tương ứng.
 | **Bùi Duy Hải**<br>(MSSV: 2A202601878) | **Security Engineer**: Cài đặt PII Scrubbing, tối ưu regex patterns cho Passport/Địa chỉ VN, tích hợp processor làm sạch log trước khi ghi file. | `3eef846` | Thiết kế regex hiệu quả cho các loại PII đặc thù của Việt Nam; cơ chế hoạt động của logging processor trong structlog. |
 | **Lê Trung Hiếu**<br>(MSSV: 2A202601917) | **Metrics & Dashboard**: Chuẩn hóa `traffic` và `error_rate_pct` theo tổng request; xây dashboard FastAPI đọc trực tiếp `/metrics` với 6 nhóm chỉ số, đơn vị và threshold; hoàn thiện `docs/dashboard-spec.md`; bổ sung unit test cho metrics và dashboard. | `a9d000c` | Cách tính error rate trên tổng request; ý nghĩa của P50/P95/P99; cách ánh xạ snapshot `/metrics` thành dashboard và phân biệt metrics tích lũy từ lúc API khởi động với dữ liệu time series. |
 | **Nguyễn Minh Thu**<br>(MSSV: 2A202601631) | **SRE & Alerts Engineer**: Thiết lập SLO (`config/slo.yaml`), viết alert rules (`config/alert_rules.yaml`) và runbook xử lý sự cố (`docs/alerts.md`) dựa trên baseline và incident practice. | `4ad611f` | Cách đặt ngưỡng SLO dựa trên dữ liệu thực tế đo đạc; symptom-based alert bám sát SLO thay vì tên implementation; thiết kế runbook cho SRE. |
-| **Phan Bá Khánh Linh**<br>(MSSV: 2A202601989) | **QA & Chief Investigator (Bạn)**: Thiết lập môi trường, bọc tracing cho RAG/LLM thành các span con, chạy tải load test challenge và phân tích root cause sự cố nghẽn luồng Event Loop. | `44398f4` | Hiểu rõ cơ chế nghẽn luồng (Event Loop blocking) của FastAPI khi gọi các hàm đồng bộ nặng; cách sử dụng decorator `@observe` để phân tích độ trễ của từng bước (RAG vs LLM) trên biểu đồ waterfall trace. |
+| **Phan Bá Khánh Linh**<br>(MSSV: 2A202601989) | **QA & Chief Investigator**: Thiết lập môi trường, bọc tracing cho RAG/LLM thành các span con, chạy tải load test challenge và phân tích root cause sự cố nghẽn luồng Event Loop. | `44398f4` | Hiểu rõ cơ chế nghẽn luồng (Event Loop blocking) của FastAPI khi gọi các hàm đồng bộ nặng; cách sử dụng decorator `@observe` để phân tích độ trễ của từng bước (RAG vs LLM) trên biểu đồ waterfall trace. |
