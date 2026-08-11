@@ -17,13 +17,13 @@
 - Điểm `validate_logs.py`: 100/100 (Đạt điểm tối đa ở CP1)
 - Tổng số traces: >15 traces được ghi nhận thành công trên Langfuse
 - Số PII leak còn lại: 0 (Đã kiểm chứng che giấu hoàn toàn CCCD, thẻ tín dụng, email, điện thoại, hộ chiếu, địa chỉ Việt Nam)
-- Link/đường dẫn dashboard: Streamlit app chạy local (Cấu hình khớp hoàn toàn với `config/dashboard.yaml`)
+- Link/đường dẫn dashboard: `submission/evidence/dashboard.png` (dashboard runtime trên Langfuse); đặc tả đầy đủ 6 nhóm chỉ số nằm tại `docs/dashboard-spec.md`, và dashboard FastAPI tham chiếu trực tiếp endpoint `/metrics` được triển khai trong `app/dashboard.py`.
 
 ## 3. Logging và tracing
 
 - Evidence correlation ID: Correlation ID được truyền dạng `req-<8-char-hex>` (ví dụ: `req-e724658b`) xuất hiện đồng nhất trong logs và headers phản hồi `x-request-id`.
 - Evidence PII redaction: Chuỗi nhạy cảm trong log tự động thay thế bằng nhãn dạng `[REDACTED_EMAIL]`, `[REDACTED_PHONE_VN]`, `[REDACTED_CREDIT_CARD]`,... thông qua structlog processor.
-- Evidence trace waterfall: `submission/evidence/trace_waterfall.png` chụp vết trace chi tiết.
+- Evidence trace waterfall: `submission/evidence/trace_waterfall.jpg` chụp vết trace chi tiết.
 - Giải thích một span đáng chú ý: Span `rag_retrieve` trong trace của challenge `rag_slow` có độ trễ lớn (~2500ms) vì do kịch bản incident giả lập hàm `time.sleep(2.5)` đồng bộ gây nghẽn luồng.
 
 ## 4. Prompt versioning
@@ -32,12 +32,12 @@
 - Version/label baseline: Version 1 (labels: `baseline`, `production`)
 - Version/label candidate: Version 2 (label: `candidate`)
 - Trace ID của mỗi version: Trace ID của v1 dùng label `baseline`/`production` và v2 dùng label `candidate` được thể hiện cụ thể trên giao diện Langfuse.
-- Bằng chứng đổi label hoặc rollback: `submission/evidence/prompt_versions.png` chụp lịch sử chuyển đổi nhãn prompt trên Langfuse.
+- Bằng chứng đổi label hoặc rollback: `submission/evidence/prompts_version.png` chụp các phiên bản prompt và `submission/evidence/rollback.png` ghi nhận thao tác rollback trên Langfuse.
 
 ## 5. Dashboard, SLO và alerts
 
 - Kết quả `validate_dashboard.py`: HỢP LỆ 6/6 panel.
-- Evidence dashboard: `submission/evidence/member-c-dashboard-metrics.png` (trạng thái healthy, đủ threshold theo `config/slo.yaml`: latency ≤3000ms, traffic ≥1, error ≤2%, cost ≤2.5 USD, tokens ≤50000, quality ≥0.75) và `submission/evidence/member-c-dashboard-error.png` (panel error rate chuyển sang BREACHED ở 33.33% khi có `RuntimeError`, khớp kịch bản `tool_fail` đã test).
+- Evidence dashboard: `submission/evidence/dashboard.png` chụp dashboard runtime trên Langfuse. Thiết kế đầy đủ 6 nhóm Latency, Traffic, Error, Cost, Tokens và Quality, cùng field nguồn, đơn vị và threshold, được mô tả trong `docs/dashboard-spec.md`. Endpoint `/metrics` và dashboard FastAPI trong `app/dashboard.py` là phần triển khai kỹ thuật dùng để kiểm chứng spec.
 - SLO đã chọn và lý do (`config/slo.yaml`):
   - `latency_p95_ms` objective 3000ms: baseline đo bằng `python scripts/load_test.py` cho p95 ~1075-1165ms, p99 ~1246ms; khi bật incident `rag_slow` p95 tăng lên ~3600ms, vượt ngưỡng. Giữ 3000ms để có khoảng đệm với baseline nhưng vẫn bắt đúng sự cố.
   - `error_rate_pct` objective 2%: khớp với threshold panel `errors` trong `config/dashboard.yaml` để không lệch số giữa các artifact.
@@ -67,6 +67,6 @@ Với mỗi thành viên, ghi rõ nhiệm vụ và link commit/PR tương ứng.
 |---|---|---|---|
 | **Đoàn Nhật Bình**<br>(MSSV: 2A202602018) | **API & Middleware**: Viết `CorrelationIdMiddleware`, xử lý correlation ID cho request/response và ghi log contextvars; cài đặt Exception Handler mở rộng. | `fa06fc3` | Cách quản lý contextvars trong ứng dụng async FastAPI; cách bắt lỗi toàn cục và trả về thông tin lỗi chuẩn hóa không lộ PII kèm x-request-id. |
 | **Bùi Duy Hải**<br>(MSSV: 2A202601878) | **Security Engineer**: Cài đặt PII Scrubbing, tối ưu regex patterns cho Passport/Địa chỉ VN, tích hợp processor làm sạch log trước khi ghi file. | `3eef846` | Thiết kế regex hiệu quả cho các loại PII đặc thù của Việt Nam; cơ chế hoạt động của logging processor trong structlog. |
-| **Lê Trung Hiếu**<br>(MSSV: 2A202601917) | **Metrics & Dashboard**: Đo đếm `error_rate_pct` ở phần backend metrics và tham gia thiết kế spec cho Dashboard 6 nhóm chỉ số. | `a9d000c` | Cách tính toán tỷ lệ lỗi trên tổng số request bao gồm cả lỗi hệ thống; cách thiết kế cấu trúc dashboard YAML. |
+| **Lê Trung Hiếu**<br>(MSSV: 2A202601917) | **Metrics & Dashboard**: Chuẩn hóa `traffic` và `error_rate_pct` theo tổng request; xây dashboard FastAPI đọc trực tiếp `/metrics` với 6 nhóm chỉ số, đơn vị và threshold; hoàn thiện `docs/dashboard-spec.md`; bổ sung unit test cho metrics và dashboard. | `a9d000c` | Cách tính error rate trên tổng request; ý nghĩa của P50/P95/P99; cách ánh xạ snapshot `/metrics` thành dashboard và phân biệt metrics tích lũy từ lúc API khởi động với dữ liệu time series. |
 | **Nguyễn Minh Thu**<br>(MSSV: 2A202601631) | **SRE & Alerts Engineer**: Thiết lập SLO (`config/slo.yaml`), viết alert rules (`config/alert_rules.yaml`) và runbook xử lý sự cố (`docs/alerts.md`) dựa trên baseline và incident practice. | `4ad611f` | Cách đặt ngưỡng SLO dựa trên dữ liệu thực tế đo đạc; symptom-based alert bám sát SLO thay vì tên implementation; thiết kế runbook cho SRE. |
-| **Phan Bá Khánh Linh**<br>(MSSV: 2A202601989) | **QA & Chief Investigator (Bạn)**: Thiết lập môi trường, bọc tracing cho RAG/LLM thành các span con, chạy tải load test challenge và phân tích root cause sự cố nghẽn luồng Event Loop. | `f139f50` | Hiểu rõ cơ chế nghẽn luồng (Event Loop blocking) của FastAPI khi gọi các hàm đồng bộ nặng; cách sử dụng decorator `@observe` để phân tích độ trễ của từng bước (RAG vs LLM) trên biểu đồ waterfall trace. |
+| **Phan Bá Khánh Linh**<br>(MSSV: 2A202601989) | **QA & Chief Investigator (Bạn)**: Thiết lập môi trường, bọc tracing cho RAG/LLM thành các span con, chạy tải load test challenge và phân tích root cause sự cố nghẽn luồng Event Loop. | `44398f4` | Hiểu rõ cơ chế nghẽn luồng (Event Loop blocking) của FastAPI khi gọi các hàm đồng bộ nặng; cách sử dụng decorator `@observe` để phân tích độ trễ của từng bước (RAG vs LLM) trên biểu đồ waterfall trace. |
